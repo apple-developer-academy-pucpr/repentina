@@ -47,10 +47,10 @@ footer{font-size:12px;color:#75826f;padding-bottom:36px}
 <header><div class="brand">Apple Developer Academy<span>PUCPR</span></div><div class="event-name">Repentina</div></header>
 <main>
 <section class="hero" aria-labelledby="title">
-<div class="eyebrow">Encontre seu próximo time</div>
-<h1 id="title">É hora de trocar.</h1>
-<div class="badge" id="round">Rodada —</div>
-<p class="intro" id="intro">Veja quem sai e quem chega em cada time. Busque seu nome para encontrar seu destino nesta rodada.</p>
+<div class="eyebrow" id="eyebrow">Repentina · Equipes</div>
+<h1 id="title">Encontre sua equipe</h1>
+<div class="badge" id="round" hidden></div>
+<p class="intro" id="intro">Busque seu nome para encontrar sua equipe.</p>
 </section>
 <div class="search"><label for="search">Qual é o seu nome?</label><input id="search" type="search" role="combobox" aria-autocomplete="list" aria-controls="names" aria-expanded="false" placeholder="Comece a digitar seu nome…" autocomplete="off"><ul id="names" class="suggestions" role="listbox" aria-label="Nomes encontrados" hidden></ul></div>
 <div id="personal" class="notice" role="status" hidden></div>
@@ -58,7 +58,7 @@ footer{font-size:12px;color:#75826f;padding-bottom:36px}
 <div id="teams"></div>
 <p id="empty" class="notice" hidden>Nenhum nome encontrado. Confira a escrita ou tente apenas uma parte do nome.</p>
 </main>
-<footer>Somente a rodada liberada pela organização aparece aqui.</footer>
+<footer>Repentina · Apple Developer Academy PUCPR</footer>
 <script>
 'use strict';
 const data=/*__ROUND_DATA__*/null;
@@ -74,19 +74,19 @@ function render(){
  $('teams').replaceChildren();$('clear').hidden=!query;$('empty').hidden=visible.length>0;
  $('count').textContent=query?`${matches.length} pessoa(s) · ${visible.length} time(s)`:`${data.teams.length} times · ${data.participants.length} participantes`;
  $('personal').hidden=!query||matches.length!==1;
- if(query&&matches.length===1){const p=matches[0];$('personal').textContent=data.round===0?`${p.name}, seu time inicial é o ${p.to}.`:p.from===p.to?`${p.name}, você permanece no time ${p.to}.`:`${p.name}, saia do time ${p.from} e vá para o time ${p.to}.`}
+ if(query&&matches.length===1){const p=matches[0];$('personal').textContent=data.round===0?`${p.name}, sua equipe é a ${p.to}.`:p.from===p.to?`${p.name}, você permanece no time ${p.to}.`:`${p.name}, saia do time ${p.from} e vá para o time ${p.to}.`}
  for(const t of visible){
   const card=element('section',undefined,'team'), heading=element('h2',`Time ${String(t).padStart(2,'0')}`);
   const incoming=data.participants.filter(p=>p.to===t&&p.from!==t),outgoing=data.participants.filter(p=>p.from===t&&p.to!==t);
-  heading.append(element('span',data.round===0?'Formação inicial':`${incoming.length} entra · ${outgoing.length} sai`));card.append(heading);
-  const groups=data.round===0?[['Time inicial',data.participants.filter(p=>p.to===t),'initial']]:[['↗ Quem sai',outgoing,'out'],['↘ Quem entra',incoming,'in'],['Quem fica',data.participants.filter(p=>p.from===t&&p.to===t),'stay']];
+  heading.append(element('span',data.round===0?'Integrantes':`${incoming.length} entra · ${outgoing.length} sai`));card.append(heading);
+  const groups=data.round===0?[['Equipe',data.participants.filter(p=>p.to===t),'initial']]:[['↗ Quem sai',outgoing,'out'],['↘ Quem entra',incoming,'in'],['Quem fica',data.participants.filter(p=>p.from===t&&p.to===t),'stay']];
   for(const [title,people,kind] of groups){const group=element('div',undefined,`group ${kind}`);group.append(element('h3',title));
    if(!people.length)group.append(element('p',kind==='stay'?'Ninguém permanece neste time.':'Sem movimentações.','empty'));
    for(const p of people){const row=element('div',undefined,`person${query&&matching.has(p.id)?' match':''}`);row.append(element('strong',p.name));if(kind==='out'||kind==='in')row.append(element('small',kind==='out'?`Vai para o time ${p.to}`:`Vem do time ${p.from}`));group.append(row)}card.append(group)
   }$('teams').append(card)
  }
 }
-if(data){$('round').textContent=`Rodada ${data.round}`;if(data.round===0){$('title').textContent='Seu ponto de partida.';$('intro').textContent='Encontre seu time inicial. As trocas começam na rodada 1.'}}
+if(data){$('round').hidden=data.round===0;$('round').textContent=data.round===0?'':`${data.round}ª Troca`;if(data.round===0){$('title').textContent='Encontre sua equipe';$('intro').textContent='Busque seu nome para encontrar sua equipe.'}else{$('title').textContent='É hora de trocar.';$('eyebrow').textContent='Encontre seu próximo time';$('intro').textContent='Veja quem sai e quem chega em cada time. Busque seu nome para encontrar seu destino nesta troca.'}}
 let suggestions=[],activeSuggestion=-1;
 function closeSuggestions(){
  $('names').hidden=true;$('search').setAttribute('aria-expanded','false');
