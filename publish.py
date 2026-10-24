@@ -6,6 +6,22 @@ from pathlib import Path
 import sys
 
 
+def validate_zoom(payload):
+    if set(payload) != {'mode', 'participants'} or payload['mode'] != 'zoom' or not isinstance(payload['participants'], list) or len(payload['participants']) != 120:
+        raise ValueError('Dados do Zoom inválidos.')
+    ids, codes, names = set(), set(), set()
+    for person in payload['participants']:
+        if set(person) != {'id', 'name', 'code'}:
+            raise ValueError('Campos não permitidos no modo Zoom.')
+        if any(not isinstance(person[key], str) or not person[key].strip() for key in ('id', 'name', 'code')):
+            raise ValueError('Código ou nome ausente.')
+        if not person['code'].isascii() or not person['code'].isdigit() or len(person['code']) != 4:
+            raise ValueError('Código deve conter quatro dígitos.')
+        if person['id'] in ids or person['code'] in codes or person['name'].strip().casefold() in names:
+            raise ValueError('Registro duplicado no modo Zoom.')
+        ids.add(person['id']); codes.add(person['code']); names.add(person['name'].strip().casefold())
+
+
 def render(payload, selected, template):
     if selected not in range(5) or set(payload) != {'round', 'teams', 'participants'} or payload['round'] != selected:
         raise ValueError('Rodada inválida.')
@@ -41,13 +57,16 @@ def main():
         template = Path(__file__).with_name('index.html').read_text()
         if choice == 'Fechar página':
             payload = {'closed': True}
+        elif choice == 'Códigos do Zoom':
+            payload = json.loads(os.environ['ZOOM_DATA'])
+            validate_zoom(payload)
         else:
             selected = int(choice)
             payload = json.loads(os.environ['ROUND_DATA'])
             render(payload, selected, template)  # validate without embedding data
         html = template.replace('/*__ROUND_DATA__*/null', 'null')
     except (ValueError, KeyError, TypeError):
-        print('Não foi possível validar a rodada. Confira o secret correspondente; a publicação anterior será mantida.', file=sys.stderr)
+        print('Não foi possível validar os dados. Confira o secret correspondente; a publicação anterior será mantida.', file=sys.stderr)
         return 1
     output = Path('dist')
     output.mkdir(exist_ok=True)

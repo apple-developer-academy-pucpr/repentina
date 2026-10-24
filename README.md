@@ -40,3 +40,12 @@ uma aba em segundo plano, oculta os dados e verifica o estado novamente.
 A implantação ainda precisa concluir e propagar no GitHub Pages. Abas que
 carregaram a implementação antiga precisam ser recarregadas uma vez. Nenhuma
 alteração pode revogar cópias que alguém já salvou.
+
+## Códigos do Zoom
+
+No workflow **Controlar página da Repentina**, escolha **Códigos do Zoom**.
+O site oferece busca pelo nome e um botão que copia `[XXXX] Nome Completo`.
+Os nomes e códigos são fornecidos pelo secret `ZOOM_CODES`. A planilha e a
+coluna CPF não são enviadas ao repositório ou incluídas nesse secret.
+Somente o modo escolhido é entregue aos visitantes. **Fechar página** também
+remove os códigos da publicação ativa.

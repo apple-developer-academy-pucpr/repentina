@@ -1,14 +1,14 @@
-name: Liberar rodada ou fechar página
+name: Controlar página da Repentina
 
 on:
   workflow_dispatch:
     inputs:
       round:
-        description: Escolha a rodada ou Fechar página para ocultar os dados
+        description: Escolha equipes (0), trocas (1–4), códigos do Zoom ou fechar
         required: true
         type: choice
         default: '0'
-        options: ['0', '1', '2', '3', '4', 'Fechar página']
+        options: ['0', '1', '2', '3', '4', 'Códigos do Zoom', 'Fechar página']
 
 permissions:
   contents: read
@@ -31,10 +31,16 @@ jobs:
         with:
           persist-credentials: false
       - name: Gerar somente a rodada selecionada
-        if: inputs.round != 'Fechar página'
+        if: inputs.round != 'Fechar página' && inputs.round != 'Códigos do Zoom'
         env:
           SELECTED_ROUND: ${{ inputs.round }}
           ROUND_DATA: ${{ secrets[format('ROUND_{0}', inputs.round)] }}
+        run: python3 publish.py
+      - name: Mostrar códigos do Zoom
+        if: inputs.round == 'Códigos do Zoom'
+        env:
+          SELECTED_ROUND: Códigos do Zoom
+          ZOOM_DATA: ${{ secrets.ZOOM_CODES }}
         run: python3 publish.py
       - name: Fechar página sem carregar dados dos candidatos
         if: inputs.round == 'Fechar página'

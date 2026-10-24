@@ -43,6 +43,7 @@ footer{font-size:12px;color:#75826f;padding-bottom:36px}
 [hidden]{display:none!important}
 @media(max-width:900px){#teams{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{grid-template-columns:minmax(0,1fr) auto}.eyebrow,h1,p.intro{grid-column:1}.badge{grid-column:2}.search{width:100%}}
 @media(max-width:580px){:root{--gap:16px}header,main,footer{width:calc(100% - 40px)}header{gap:16px;padding:22px 0}.brand{font-size:16px}.brand span{font-size:11px}.event-name{font-size:25px}main{padding-top:30px}.hero{column-gap:12px;margin-bottom:26px}.eyebrow{grid-column:1/-1;font-size:9px;letter-spacing:.12em}h1{font-size:32px}.badge{font-size:18px;padding:11px 13px;border-radius:11px}p.intro{grid-column:1/-1;font-size:14px;margin-top:16px}#teams{grid-template-columns:1fr}.toolbar{align-items:center;font-size:12px}.team{padding:20px}}
+.zoom-card{grid-column:1/-1;max-width:760px;background:#fff;border:1px solid #dbe2d5;border-radius:16px;padding:28px}.zoom-card h2{margin:0 0 18px;font-size:21px;line-height:1.4}.zoom-code{display:inline-block;background:#ddecba;border-radius:10px;font-size:32px;font-weight:750;letter-spacing:.08em;padding:12px 18px;margin-bottom:22px}.zoom-name{display:block;font:inherit;font-size:18px;line-height:1.6;padding:16px;border-radius:9px;background:#f4f6ef;overflow-wrap:anywhere;user-select:all;margin:10px 0 18px}.zoom-card button{background:#17372d;color:white;padding:12px 18px}.zoom-card small{display:block;color:#52665a;margin-top:12px;line-height:1.5}.zoom-hint{grid-column:1/-1;color:#52665a;line-height:1.6;margin:0}
 </style>
 <header><div class="brand">Apple Developer Academy<span>PUCPR</span></div><div class="event-name">Repentina</div></header>
 <main>
@@ -68,6 +69,8 @@ function element(tag,text,className){const el=document.createElement(tag);if(tex
 function render(){
  $('search-area').hidden=!data;$('toolbar').hidden=!data;
  if(!data){$('teams').replaceChildren();$('names').replaceChildren();$('personal').hidden=true;$('personal').textContent='';$('search').value='';$('count').textContent='';$('empty').hidden=true;$('round').hidden=true;$('round').textContent='';$('title').textContent='Página indisponível no momento.';$('intro').textContent='Aguarde as orientações da organização.';$('eyebrow').textContent='Repentina';closeSuggestions();suggestions=[];return}
+ if(data.mode==='zoom'){renderZoom();return}
+ $('clear').textContent='Mostrar todos os times';
  $('round').hidden=data.round===0;$('round').textContent=data.round===0?'':`${data.round}ª Troca`;
  $('eyebrow').textContent=data.round===0?'Repentina · Equipes':'Encontre seu próximo time';
  $('title').textContent=data.round===0?'Encontre sua equipe':'É hora de trocar.';
@@ -89,6 +92,28 @@ function render(){
    if(!people.length)group.append(element('p',kind==='stay'?'Ninguém permanece neste time.':'Sem movimentações.','empty'));
    for(const p of people){const row=element('div',undefined,`person${query&&matching.has(p.id)?' match':''}`);row.append(element('strong',p.name));if(kind==='out'||kind==='in')row.append(element('small',kind==='out'?`Vai para o time ${p.to}`:`Vem do time ${p.from}`));group.append(row)}card.append(group)
   }$('teams').append(card)
+ }
+}
+function renderZoom(){
+ $('round').hidden=true;$('round').textContent='';$('eyebrow').textContent='Repentina · Zoom';
+ $('title').textContent='Encontre seu código';$('intro').textContent='Busque seu nome e use o formato [código] Nome Completo no Zoom.';
+ $('personal').hidden=true;$('personal').textContent='';$('clear').textContent='Limpar busca';
+ const query=normalize($('search').value);
+ const matches=query?data.participants.filter(p=>normalize(p.name).includes(query)):[];
+ $('teams').replaceChildren();$('clear').hidden=!query;$('empty').hidden=!query||matches.length>0;
+ $('count').textContent=query?`${matches.length} pessoa(s) encontrada(s)`:'Encontre seu nome para consultar o código.';
+ if(!query)$('teams').append(element('p','Digite seu nome no campo acima. Seu código e o nome para copiar aparecerão aqui.','zoom-hint'));
+ for(const p of matches){
+  const card=element('section',undefined,'zoom-card');card.append(element('h2',p.name));
+  card.append(element('div',p.code,'zoom-code'));card.append(element('div','Seu nome no Zoom'));
+  const zoomName=`[${p.code}] ${p.name}`;
+  card.append(element('code',zoomName,'zoom-name'));
+  const button=element('button','Copiar nome para o Zoom');button.type='button';
+  const status=element('small','');status.setAttribute('role','status');
+  button.addEventListener('click',async()=>{
+   try{await navigator.clipboard.writeText(zoomName);status.textContent='Copiado! Cole esse texto no seu nome no Zoom.'}
+   catch{status.textContent='Não foi possível copiar automaticamente. Selecione o texto acima e copie.'}
+  });card.append(button);card.append(status);$('teams').append(card);
  }
 }
 let suggestions=[],activeSuggestion=-1;
@@ -140,7 +165,10 @@ if(data===null){
    const response=await fetch(`current.json?fresh=${Date.now()}`,{cache:'no-store',signal:controller.signal});
    if(!response.ok)throw new Error('State unavailable');
    const next=await response.json();
-   if(next.closed===true){data=null}else{
+   if(next.closed===true){data=null}else if(next.mode==='zoom'){
+    if(!Array.isArray(next.participants)||next.participants.length!==120||!next.participants.every(p=>typeof p.name==='string'&&typeof p.code==='string'&&/^[0-9]{4}$/.test(p.code)))throw new Error('Invalid Zoom state');
+    data=next;
+   }else{
     if(!Number.isInteger(next.round)||next.round<0||next.round>4||!Array.isArray(next.participants)||next.participants.length!==120||!Array.isArray(next.teams)||next.teams.length!==30)throw new Error('Invalid state');
     data=next;
    }
