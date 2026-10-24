@@ -28,3 +28,15 @@ A publicação não é instantânea. Uma execução com erro mantém a publicaç
 ## Fechar a página
 
 No mesmo workflow, selecione **Fechar página** e execute. Após a conclusão, o site exibe apenas uma mensagem de indisponibilidade, sem nomes ou dados dos candidatos no HTML. Essa opção não carrega secrets das rodadas. Para reabrir, escolha uma rodada de 0 a 4. Fechar não apaga cópias que visitantes já tenham salvo.
+
+## Atualização automática e cache
+
+O HTML não incorpora dados dos participantes. Ele consulta `current.json` com
+`cache: no-store` e uma chave de atualização, e verifica o estado a cada 15
+segundos. A implantação fechada publica apenas `{"closed": true}` nesse arquivo.
+A página limpa dados ao detectar fechamento ou falha na consulta. Ao voltar a
+uma aba em segundo plano, oculta os dados e verifica o estado novamente.
+
+A implantação ainda precisa concluir e propagar no GitHub Pages. Abas que
+carregaram a implementação antiga precisam ser recarregadas uma vez. Nenhuma
+alteração pode revogar cópias que alguém já salvou.

@@ -52,21 +52,26 @@ footer{font-size:12px;color:#75826f;padding-bottom:36px}
 <div class="badge" id="round" hidden></div>
 <p class="intro" id="intro">Busque seu nome para encontrar sua equipe.</p>
 </section>
-<div class="search"><label for="search">Qual é o seu nome?</label><input id="search" type="search" role="combobox" aria-autocomplete="list" aria-controls="names" aria-expanded="false" placeholder="Comece a digitar seu nome…" autocomplete="off"><ul id="names" class="suggestions" role="listbox" aria-label="Nomes encontrados" hidden></ul></div>
+<div class="search" id="search-area"><label for="search">Qual é o seu nome?</label><input id="search" type="search" role="combobox" aria-autocomplete="list" aria-controls="names" aria-expanded="false" placeholder="Comece a digitar seu nome…" autocomplete="off"><ul id="names" class="suggestions" role="listbox" aria-label="Nomes encontrados" hidden></ul></div>
 <div id="personal" class="notice" role="status" hidden></div>
-<div class="toolbar"><span id="count" role="status" aria-live="polite"></span><button id="clear" hidden>Mostrar todos os times</button></div>
+<div class="toolbar" id="toolbar"><span id="count" role="status" aria-live="polite"></span><button id="clear" hidden>Mostrar todos os times</button></div>
 <div id="teams"></div>
 <p id="empty" class="notice" hidden>Nenhum nome encontrado. Confira a escrita ou tente apenas uma parte do nome.</p>
 </main>
 <footer>Repentina · Apple Developer Academy PUCPR</footer>
 <script>
 'use strict';
-const data=/*__ROUND_DATA__*/null;
+let data=/*__ROUND_DATA__*/null;
 const $=id=>document.getElementById(id);
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
 function element(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el}
 function render(){
- if(!data){$('intro').textContent='Nenhuma rodada foi liberada ainda.';$('search').disabled=true;return}
+ $('search-area').hidden=!data;$('toolbar').hidden=!data;
+ if(!data){$('teams').replaceChildren();$('names').replaceChildren();$('personal').hidden=true;$('personal').textContent='';$('search').value='';$('count').textContent='';$('empty').hidden=true;$('round').hidden=true;$('round').textContent='';$('title').textContent='Página indisponível no momento.';$('intro').textContent='Aguarde as orientações da organização.';$('eyebrow').textContent='Repentina';closeSuggestions();suggestions=[];return}
+ $('round').hidden=data.round===0;$('round').textContent=data.round===0?'':`${data.round}ª Troca`;
+ $('eyebrow').textContent=data.round===0?'Repentina · Equipes':'Encontre seu próximo time';
+ $('title').textContent=data.round===0?'Encontre sua equipe':'É hora de trocar.';
+ $('intro').textContent=data.round===0?'Busque seu nome para encontrar sua equipe.':'Veja quem sai e quem chega em cada time. Busque seu nome para encontrar seu destino nesta troca.';
  const query=normalize($('search').value);
  const matches=data.participants.filter(p=>normalize(p.name).includes(query));
  const matching=new Set(matches.map(p=>p.id));
@@ -86,7 +91,6 @@ function render(){
   }$('teams').append(card)
  }
 }
-if(data){$('round').hidden=data.round===0;$('round').textContent=data.round===0?'':`${data.round}ª Troca`;if(data.round===0){$('title').textContent='Encontre sua equipe';$('intro').textContent='Busque seu nome para encontrar sua equipe.'}else{$('title').textContent='É hora de trocar.';$('eyebrow').textContent='Encontre seu próximo time';$('intro').textContent='Veja quem sai e quem chega em cada time. Busque seu nome para encontrar seu destino nesta troca.'}}
 let suggestions=[],activeSuggestion=-1;
 function closeSuggestions(){
  $('names').hidden=true;$('search').setAttribute('aria-expanded','false');
@@ -124,5 +128,27 @@ $('search').addEventListener('keydown',event=>{
  const selected=$('names').children[activeSuggestion];$('search').setAttribute('aria-activedescendant',selected.id);selected.scrollIntoView({block:'nearest'});
 });
 $('clear').addEventListener('click',()=>{$('search').value='';render();$('search').focus();closeSuggestions()});render();
+// Published pages contain no participant data in their HTML. Local previews
+// can still embed a single round and do not use the online polling endpoint.
+if(data===null){
+ let pending=false;
+ async function refreshState(){
+  if(pending)return;pending=true;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+   const response=await fetch(`current.json?fresh=${Date.now()}`,{cache:'no-store',signal:controller.signal});
+   if(!response.ok)throw new Error('State unavailable');
+   const next=await response.json();
+   if(next.closed===true){data=null}else{
+    if(!Number.isInteger(next.round)||next.round<0||next.round>4||!Array.isArray(next.participants)||next.participants.length!==120||!Array.isArray(next.teams)||next.teams.length!==30)throw new Error('Invalid state');
+    data=next;
+   }
+  }catch{data=null}
+  finally{clearTimeout(timeout);pending=false;closeSuggestions();render()}
+ }
+ refreshState();setInterval(refreshState,15000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){data=null;render();refreshState()}});
+}
 </script>
 </html>
