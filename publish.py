@@ -37,17 +37,21 @@ def render(payload, selected, template):
 
 def main():
     try:
-        selected = int(os.environ['SELECTED_ROUND'])
-        payload = json.loads(os.environ['ROUND_DATA'])
-        template = Path(__file__).with_name('index.html').read_text()
-        html = render(payload, selected, template)
+        choice = os.environ['SELECTED_ROUND']
+        if choice == 'Fechar página':
+            html = Path(__file__).with_name('closed.html').read_text()
+        else:
+            selected = int(choice)
+            payload = json.loads(os.environ['ROUND_DATA'])
+            template = Path(__file__).with_name('index.html').read_text()
+            html = render(payload, selected, template)
     except (ValueError, KeyError, TypeError):
         print('Não foi possível validar a rodada. Confira o secret correspondente; a publicação anterior será mantida.', file=sys.stderr)
         return 1
     output = Path('dist')
     output.mkdir(exist_ok=True)
     (output / 'index.html').write_text(html)
-    print(f'Rodada {selected} validada. Pronta para publicação.')
+    print('Página validada. Pronta para publicação.')
     return 0
 
 

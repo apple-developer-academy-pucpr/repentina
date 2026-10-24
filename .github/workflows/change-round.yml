@@ -1,14 +1,14 @@
-name: Liberar rodada
+name: Liberar rodada ou fechar página
 
 on:
   workflow_dispatch:
     inputs:
       round:
-        description: Rodada que ficará visível para os participantes
+        description: Escolha a rodada ou Fechar página para ocultar os dados
         required: true
         type: choice
         default: '0'
-        options: ['0', '1', '2', '3', '4']
+        options: ['0', '1', '2', '3', '4', 'Fechar página']
 
 permissions:
   contents: read
@@ -31,9 +31,15 @@ jobs:
         with:
           persist-credentials: false
       - name: Gerar somente a rodada selecionada
+        if: inputs.round != 'Fechar página'
         env:
           SELECTED_ROUND: ${{ inputs.round }}
           ROUND_DATA: ${{ secrets[format('ROUND_{0}', inputs.round)] }}
+        run: python3 publish.py
+      - name: Fechar página sem carregar dados dos candidatos
+        if: inputs.round == 'Fechar página'
+        env:
+          SELECTED_ROUND: Fechar página
         run: python3 publish.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
