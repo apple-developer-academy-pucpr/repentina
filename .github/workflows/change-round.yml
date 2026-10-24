@@ -1,0 +1,45 @@
+name: Liberar rodada
+
+on:
+  workflow_dispatch:
+    inputs:
+      round:
+        description: Rodada que ficará visível para os participantes
+        required: true
+        type: choice
+        default: '0'
+        options: ['0', '1', '2', '3', '4']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Gerar somente a rodada selecionada
+        env:
+          SELECTED_ROUND: ${{ inputs.round }}
+          ROUND_DATA: ${{ secrets[format('ROUND_{0}', inputs.round)] }}
+        run: python3 publish.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+          retention-days: 1
+      - name: Publicar página dos participantes
+        id: deployment
+        uses: actions/deploy-pages@v5

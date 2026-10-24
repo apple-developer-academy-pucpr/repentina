@@ -1,0 +1,6 @@
+dist/
+.env*
+private-data/
+backups/
+exports/
+__pycache__/
