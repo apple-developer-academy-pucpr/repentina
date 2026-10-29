@@ -2,8 +2,11 @@
 import argparse
 import json
 from pathlib import Path
+import sys
 import xml.etree.ElementTree as ET
 import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from publish import validate_zoom
 
 NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
