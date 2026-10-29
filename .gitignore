@@ -1,6 +1,7 @@
 dist/
-.env*
 private-data/
 backups/
 exports/
+.env*
 __pycache__/
+*.py[cod]
